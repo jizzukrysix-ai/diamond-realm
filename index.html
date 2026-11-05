@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Diamond Realm - Idle Tap Adventure</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <style>
+        :root {
+            --bg-grad-start: #0a0612;
+            --bg-grad-mid: #160d29;
+            --bg-grad-end: #0a0612;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --accent-purple: #8b5cf6;
+            --accent-glow: #c084fc;
+            --accent-green: #10b981;
+            --accent-gold: #f59e0b;
+            --accent-cyan: #06b6d4;
+            --text-main: #f3f4f6;
+            --text-sub: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top, var(--bg-grad-mid), var(--bg-grad-start));
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Glow Background Effect */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(0,0,0,0) 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Glassmorphism Styling */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header Navigation */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            z-index: 10;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-purple), #4c1d95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+            border: 2px solid var(--card-border);
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .user-title-badge {
+            font-size: 10px;
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-glow);
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            display: inline-block;
+            margin-top: 2px;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px;
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            margin-bottom: 16px;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 8px 0;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-sub);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.active {
+            background: var(--accent-purple);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Screen Views */
+        .tab-view {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            flex-grow: 1;
+            z-index: 1;
+        }
+
+        .tab-view.active {
+            display: flex;
+        }
+
+        /* Points / Gem Display */
+        .score-container {
+            text-align: center;
+            margin: 6px 0;
+        }
+
+        .score-title {
+            font-size: 11px;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .score-val {
+            font-size: 38px;
+            font-weight: 900;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-shadow: 0 0 25px rgba(192, 132, 252, 0.6);
+        }
+
+        /* Dynamic Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-box {
+            padding: 12px;
+            border-radius: 14px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-val {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-glow));
+            width: 100%;
+            transition: width 0.2s ease;
+        }
+
+        /* Main Game Mining Core */
+        .mining-area {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            min-height: 200px;
+        }
+
+        .realm-crystal {
+            width: 190px;
+            height: 190px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(192,132,252,0.25) 0%, rgba(10,6,18,0) 70%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.05s ease;
+            border: 2px solid rgba(192, 132, 252, 0.2);
+            box-shadow: 0 0 50px rgba(139, 92, 246, 0.15);
+        }
+
+        .realm-crystal:active {
+            transform: scale(0.93);
+        }
+
+        .crystal-icon {
+            font-size: 95px;
+            filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.8));
+            pointer-events: none;
+        }
+
+        /* Floating +Score FX */
+        .float-text {
+            position: absolute;
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            text-shadow: 0 0 10px var(--accent-purple);
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-70px) scale(1.2); }
+        }
+
+        /* Upgrades & Upgrades Grid */
+        .upgrade-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .upgrade-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .upgrade-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .upgrade-desc {
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, var(--accent-purple), #6d28d9);
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-action.green {
+            background: linear-gradient(135deg, #10b981, #047857);
+        }
+
+        .btn-action:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Legal & Info Pages Styling */
+        .info-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-glow);
+            margin-bottom: 4px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 6px;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: var(--text-sub);
+            line-height: 1.6;
+        }
+
+        .info-list {
+            margin-left: 16px;
+            font-size: 12px;
+            color: var(--text-sub);
+            line-height: 1.6;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--accent-purple);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast">Reward Collected!</div>
+
+    <!-- Top Profile & Header -->
+    <div class="header">
+        <div class="user-info">
+            <div class="user-avatar" id="user-avatar">U</div>
+            <div>
+                <div style="font-size: 14px; font-weight: 700;" id="user-name">Realm Explorer</div>
+                <div class="user-title-badge" id="user-title">Novice Miner</div>
+            </div>
+        </div>
+        <div class="glass-card" style="padding: 6px 12px; font-size: 11px; font-weight: 600; color: var(--accent-cyan);">
+            ⚙️ Auto-Mine: <span id="automine-rate">0</span>/s
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <div class="nav-btn active" onclick="switchTab('tab-game')">🎮 Mine</div>
+        <div class="nav-btn" onclick="switchTab('tab-upgrades')">⚡ Upgrades</div>
+        <div class="nav-btn" onclick="switchTab('tab-boosts')">📺 Boosters</div>
+        <div class="nav-btn" onclick="switchTab('tab-about')">ℹ️ Legal & Info</div>
+    </div>
+
+    <!-- TAB 1: GAMEPLAY CORE -->
+    <div id="tab-game" class="tab-view active">
+        <div class="score-container">
+            <div class="score-title">Realm Crystal Points</div>
+            <div class="score-val">
+                💎 <span id="score">0</span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="glass-card stat-box">
+                <div class="stat-label">
+                    <span>Stamina</span>
+                    <span id="stamina-text">1000/1000</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="stamina-bar"></div>
+                </div>
+            </div>
+            <div class="glass-card stat-box">
+                <div class="stat-label">
+                    <span>Rank Level</span>
+                    <span id="rank-text">Lvl 1</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="rank-bar" style="width: 5%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mining-area">
+            <div class="realm-crystal" id="tap-target">
+                <div class="crystal-icon">💎</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: IN-GAME UPGRADES -->
+    <div id="tab-upgrades" class="tab-view">
+        <div class="glass-card info-section">
+            <div class="info-title">⚒️ Crystal Efficiency Upgrades</div>
+            <p class="info-text">Spend your in-game crystal points to permanently upgrade your tap power and automated generator speed.</p>
+        </div>
+
+        <div class="upgrade-card glass-card">
+            <div class="upgrade-info">
+                <div class="upgrade-title">Pickaxe Power (+1/tap)</div>
+                <div class="upgrade-desc">Cost: <span id="cost-pickaxe">50</span> 💎 | Current: +<span id="val-pickaxe">1</span></div>
+            </div>
+            <button class="btn-action" id="btn-buy-pickaxe" onclick="buyUpgrade('pickaxe')">Upgrade</button>
+        </div>
+
+        <div class="upgrade-card glass-card">
+            <div class="upgrade-info">
+                <div class="upgrade-title">Auto Crystal Drone (+2/sec)</div>
+                <div class="upgrade-desc">Cost: <span id="cost-drone">150</span> 💎 | Current: <span id="val-drone">0</span>/s</div>
+            </div>
+            <button class="btn-action" id="btn-buy-drone" onclick="buyUpgrade('drone')">Upgrade</button>
+        </div>
+
+        <div class="upgrade-card glass-card">
+            <div class="upgrade-info">
+                <div class="upgrade-title">Stamina Tank Expansion (+500)</div>
+                <div class="upgrade-desc">Cost: <span id="cost-stamina">200</span> 💎 | Max: <span id="val-max-stamina">1000</span></div>
+            </div>
+            <button class="btn-action" id="btn-buy-stamina" onclick="buyUpgrade('stamina')">Upgrade</button>
+        </div>
+    </div>
+
+    <!-- TAB 3: SPONSORED BOOSTERS (ADSGRAM MODERATION COMPLIANT) -->
+    <div id="tab-boosts" class="tab-view">
+        <div class="glass-card info-section">
+            <div class="info-title">🎁 Optional Sponsor Boosters</div>
+            <p class="info-text">Watch a short video ad from our sponsors to instantly unlock gameplay boosts. Watching ads is entirely optional and never mandatory to play.</p>
+        </div>
+
+        <div class="upgrade-card glass-card">
+            <div class="upgrade-info">
+                <div class="upgrade-title">⚡ Instant Stamina Refill</div>
+                <div class="upgrade-desc">Completely restore your stamina bar to max instantly.</div>
+            </div>
+            <button class="btn-action green" id="btn-ad-stamina">Watch Ad</button>
+        </div>
+
+        <div class="upgrade-card glass-card">
+            <div class="upgrade-info">
+                <div class="upgrade-title">💎 Crystal Cache (+300 💎)</div>
+                <div class="upgrade-desc">Receive an immediate bonus of 300 game points.</div>
+            </div>
+            <button class="btn-action green" id="btn-ad-cache">Watch Ad</button>
+        </div>
+
+        <div class="upgrade-card glass-card">
+            <div class="upgrade-info">
+                <div class="upgrade-title">🚀 2x Overcharge (5 Mins)</div>
+                <div class="upgrade-desc">Double your tapping output for 5 minutes.</div>
+            </div>
+            <button class="btn-action green" id="btn-ad-overcharge">Watch Ad</button>
+        </div>
+    </div>
+
+    <!-- TAB 4: LEGAL, ABOUT & PRIVACY POLICY (NO WITHDRAWAL COMPLIANCE) -->
+    <div id="tab-about" class="tab-view">
+        <div class="glass-card info-section">
+            <div class="info-title">ℹ️ About Diamond Realm</div>
+            <p class="info-text">
+                Diamond Realm is an interactive casual mini-game created solely for entertainment and idle progress fun within Telegram.
+            </p>
+        </div>
+
+        <div class="glass-card info-section">
+            <div class="info-title">⚠️ Non-Monetary Disclaimer</div>
+            <p class="info-text">
+                <strong>Important Notice:</strong> In-game points, gems, levels, and items are purely virtual digital scores for entertainment purposes within this app. They have <strong>no real-world monetary value</strong>, cannot be converted into fiat currency or cryptocurrency, and <strong>no withdrawal or payment options exist</strong> in this application.
+            </p>
+        </div>
+
+        <div class="glass-card info-section">
+            <div class="info-title">🔒 Privacy Policy</div>
+            <p class="info-text">
+                We value your privacy. Diamond Realm processes minimal account identifiers provided via Telegram's official WebApp API to save your game progress locally (e.g. username, score, and level).
+            </p>
+            <ul class="info-list">
+                <li>We do not collect personal financial or payment information.</li>
+                <li>Game scores are stored locally on your device.</li>
+                <li>Advertising metrics are processed anonymously via Adsgram SDK.</li>
+            </ul>
+        </div>
+
+        <div class="glass-card info-section">
+            <div class="info-title">📜 Terms of Service</div>
+            <p class="info-text">
+                By opening and interacting with Diamond Realm, you agree that:
+            </p>
+            <ul class="info-list">
+                <li>This app is an entertainment mini-game without financial payouts.</li>
+                <li>Automated bots or macros designed to manipulate scores are prohibited.</li>
+                <li>Sponsored video ads are hosted via certified third-party networks.</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; font-size: 11px; color: var(--text-sub); margin-top: 8px;">
+            Official Community & Updates: <a href="https://t.me/your_telegram_channel" target="_blank" style="color: var(--accent-glow); text-decoration: none;">@YourChannel</a>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Telegram WebApp Init ---
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
+
+        if (tg?.initDataUnsafe?.user) {
+            const user = tg.initDataUnsafe.user;
+            document.getElementById('user-name').innerText = user.first_name || 'Realm Explorer';
+            document.getElementById('user-avatar').innerText = (user.first_name || 'U').charAt(0).toUpperCase();
+        }
+
+        // --- 2. Game Logic & State ---
+        let state = {
+            score: parseInt(localStorage.getItem('dr_score')) || 0,
+            stamina: parseInt(localStorage.getItem('dr_stamina')) || 1000,
+            maxStamina: parseInt(localStorage.getItem('dr_max_stamina')) || 1000,
+            tapPower: parseInt(localStorage.getItem('dr_tap_power')) || 1,
+            autoRate: parseInt(localStorage.getItem('dr_auto_rate')) || 0,
+            overcharge: 1,
+            costs: {
+                pickaxe: parseInt(localStorage.getItem('dr_cost_pickaxe')) || 50,
+                drone: parseInt(localStorage.getItem('dr_cost_drone')) || 150,
+                stamina: parseInt(localStorage.getItem('dr_cost_stamina')) || 200
+            }
+        };
+
+        function saveState() {
+            localStorage.setItem('dr_score', state.score);
+            localStorage.setItem('dr_stamina', state.stamina);
+            localStorage.setItem('dr_max_stamina', state.maxStamina);
+            localStorage.setItem('dr_tap_power', state.tapPower);
+            localStorage.setItem('dr_auto_rate', state.autoRate);
+            localStorage.setItem('dr_cost_pickaxe', state.costs.pickaxe);
+            localStorage.setItem('dr_cost_drone', state.costs.drone);
+            localStorage.setItem('dr_cost_stamina', state.costs.stamina);
+        }
+
+        function updateUI() {
+            document.getElementById('score').innerText = state.score.toLocaleString();
+            document.getElementById('stamina-text').innerText = `${state.stamina}/${state.maxStamina}`;
+            document.getElementById('stamina-bar').style.width = `${(state.stamina / state.maxStamina) * 100}%`;
+            
+            // Calculate Rank
+            const rank = Math.floor(state.score / 1000) + 1;
+            document.getElementById('rank-text').innerText = `Lvl ${rank}`;
+            document.getElementById('rank-bar').style.width = `${(state.score % 1000) / 10}%`;
+
+            if (rank > 5) document.getElementById('user-title').innerText = "Crystal Master";
+            else if (rank > 2) document.getElementById('user-title').innerText = "Adept Miner";
+
+            // Automine Rate
+            document.getElementById('automine-rate').innerText = state.autoRate;
+
+            // Upgrade Tab Values & Costs
+            document.getElementById('cost-pickaxe').innerText = state.costs.pickaxe;
+            document.getElementById('val-pickaxe').innerText = state.tapPower;
+            
+            document.getElementById('cost-drone').innerText = state.costs.drone;
+            document.getElementById('val-drone').innerText = state.autoRate;
+
+            document.getElementById('cost-stamina').innerText = state.costs.stamina;
+            document.getElementById('val-max-stamina').innerText = state.maxStamina;
+
+            // Button States
+            document.getElementById('btn-buy-pickaxe').disabled = state.score < state.costs.pickaxe;
+            document.getElementById('btn-buy-drone').disabled = state.score < state.costs.drone;
+            document.getElementById('btn-buy-stamina').disabled = state.score < state.costs.stamina;
+
+            saveState();
+        }
+
+        // --- 3. Navigation ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // --- 4. Core Tapping Mechanics ---
+        const tapTarget = document.getElementById('tap-target');
+        tapTarget.addEventListener('click', (e) => {
+            if (state.stamina <= 0) {
+                showToast("Stamina depleted! Wait or watch a sponsor ad.");
+                return;
+            }
+
+            const earned = state.tapPower * state.overcharge;
+            state.score += earned;
+            state.stamina = Math.max(0, state.stamina - 1);
+            updateUI();
+
+            // FX Animation
+            const rect = tapTarget.getBoundingClientRect();
+            const x = e.clientX || (rect.left + rect.width / 2);
+            const y = e.clientY || (rect.top + rect.height / 2);
+
+            const floatText = document.createElement('div');
+            floatText.className = 'float-text';
+            floatText.innerText = `+${earned}`;
+            floatText.style.left = `${x - 12}px`;
+            floatText.style.top = `${y - 25}px`;
+            document.body.appendChild(floatText);
+
+            setTimeout(() => floatText.remove(), 800);
+        });
+
+        // Auto Mining Loop & Regeneration
+        setInterval(() => {
+            if (state.autoRate > 0) {
+                state.score += state.autoRate;
+            }
+            if (state.stamina < state.maxStamina) {
+                state.stamina = Math.min(state.maxStamina, state.stamina + 2);
+            }
+            updateUI();
+        }, 1000);
+
+        // --- 5. In-Game Upgrades Logic ---
+        function buyUpgrade(type) {
+            if (type === 'pickaxe' && state.score >= state.costs.pickaxe) {
+                state.score -= state.costs.pickaxe;
+                state.tapPower += 1;
+                state.costs.pickaxe = Math.floor(state.costs.pickaxe * 1.6);
+                showToast("Pickaxe Upgraded!");
+            } else if (type === 'drone' && state.score >= state.costs.drone) {
+                state.score -= state.costs.drone;
+                state.autoRate += 2;
+                state.costs.drone = Math.floor(state.costs.drone * 1.8);
+                showToast("Auto Drone Purchased!");
+            } else if (type === 'stamina' && state.score >= state.costs.stamina) {
+                state.score -= state.costs.stamina;
+                state.maxStamina += 500;
+                state.stamina = state.maxStamina;
+                state.costs.stamina = Math.floor(state.costs.stamina * 1.5);
+                showToast("Stamina Tank Expanded!");
+            }
+            updateUI();
+        }
+
+        // --- 6. Official Adsgram Integration (Rule 0-12 Compliant) ---
+        const ADSGRAM_BLOCK_ID = "YOUR_BLOCK_ID_HERE"; // Insert actual ID from Adsgram Cabinet
+        let AdController = null;
+
+        if (window.Adsgram) {
+            AdController = window.Adsgram.init({ 
+                blockId: ADSGRAM_BLOCK_ID,
+                debug: false
+            });
+        }
+
+        function triggerAd(rewardCallback) {
+            if (!AdController) {
+                showToast("Sponsor network loading... Try again.");
+                return;
+            }
+
+            AdController.show().then((result) => {
+                if (result && result.done) {
+                    rewardCallback();
+                } else {
+                    showToast("Ad closed early. No reward claimed.");
+                }
+            }).catch((err) => {
+                console.error("Adsgram Error:", err);
+                showToast("No sponsor ad available right now.");
+            });
+        }
+
+        // Booster Buttons
+        document.getElementById('btn-ad-stamina').addEventListener('click', () => {
+            triggerAd(() => {
+                state.stamina = state.maxStamina;
+                updateUI();
+                showToast("⚡ Stamina Restored!");
+            });
+        });
+
+        document.getElementById('btn-ad-cache').addEventListener('click', () => {
+            triggerAd(() => {
+                state.score += 300;
+                updateUI();
+                showToast("💎 +300 Crystal Cache Claimed!");
+            });
+        });
+
+        document.getElementById('btn-ad-overcharge').addEventListener('click', () => {
+            triggerAd(() => {
+                state.overcharge = 2;
+                updateUI();
+                showToast("🚀 2x Overcharge Active (5 Mins)!");
+                setTimeout(() => {
+                    state.overcharge = 1;
+                    updateUI();
+                }, 300000);
+            });
+        });
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2800);
+        }
+
+        updateUI();
+    </script>
+</body>
+                  </html>
